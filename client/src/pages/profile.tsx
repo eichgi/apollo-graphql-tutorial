@@ -1,10 +1,57 @@
 import React from 'react';
-import { RouteComponentProps } from '@reach/router';
+import {gql, useQuery} from "@apollo/client";
 
-interface ProfileProps extends RouteComponentProps {}
+import {Loading, Header, LaunchTile} from "../components";
+import {LAUNCH_TILE_DATA} from "./launches";
+import {RouteComponentProps} from '@reach/router';
+import * as GetMyTripsTypes from './__generated__/GetMyTrips';
+
+export const GET_MY_TRIPS = gql`
+  query GET_MY_TRIPS {
+    me {
+      id
+      email
+      trips {
+        ...LaunchTile
+      }
+    }
+  }
+  ${LAUNCH_TILE_DATA}
+`;
+
+interface ProfileProps extends RouteComponentProps {
+}
 
 const Profile: React.FC<ProfileProps> = () => {
-  return <div />;
+
+  const {loading, error, data} = useQuery<GetMyTripsTypes.GetMyTrips>(GET_MY_TRIPS, {
+      fetchPolicy: "network-only",
+    }
+  );
+
+  if (loading) {
+    return <Loading/>;
+  }
+
+  if (error) {
+    return <p>Error: {error.message}</p>;
+  }
+
+  if (data === undefined) {
+    return <p>ERROR</p>;
+  }
+
+  return (
+    <>
+      <Header>My Trips</Header>
+      {data.me && data.me.trips.length
+        ? (
+          data.me.trips.map((launch: any) => (<LaunchTile key={launch.id} launch={launch}/>))
+        )
+        : <p>You haven't booked any trip</p>
+      }
+    </>
+  );
 }
 
 export default Profile;
